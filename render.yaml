@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: gala-web
+    runtime: node
+    buildCommand: npm install && npm run build
+    startCommand: node .next/standalone/server.js
+    envVars:
+      - key: PORT
+        value: 3000
+      - key: HOSTNAME
+        value: 0.0.0.0
