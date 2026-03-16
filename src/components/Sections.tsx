@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Reveal from "./Reveal";
 import { ArrowRight, ArrowUpRight, Mail, MapPin, Phone } from "lucide-react";
 import {
@@ -371,6 +372,30 @@ export function CtaBanner() {
 // CONTACT
 // ═══════════════════════════════════════════
 export function Contact() {
+  const [fields, setFields] = useState({
+    nombre: "", empresa: "", email: "", telefono: "",
+    ocasion: "", cantidad: "", mensaje: "",
+  });
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+
+  const set = (key: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+    setFields((prev) => ({ ...prev, [key]: e.target.value }));
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setStatus("loading");
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(fields),
+      });
+      setStatus(res.ok ? "success" : "error");
+    } catch {
+      setStatus("error");
+    }
+  }
+
   return (
     <section className="py-20 lg:py-36 bg-gala-cream" id="contacto">
       <div className="max-w-[1280px] mx-auto px-6 lg:px-10 grid lg:grid-cols-2 gap-12 lg:gap-24">
@@ -409,36 +434,57 @@ export function Contact() {
         </Reveal>
 
         <Reveal delay={0.2}>
-          <form className="bg-white p-10 border border-gala-stone" onSubmit={(e) => e.preventDefault()}>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
-              <FormField label="Nombre" placeholder="Tu nombre" />
-              <FormField label="Empresa" placeholder="Nombre de la empresa" />
+          {status === "success" ? (
+            <div className="bg-white p-10 border border-gala-stone flex flex-col items-center justify-center text-center min-h-[400px] gap-4">
+              <div className="w-14 h-14 bg-gala-red flex items-center justify-center mb-2">
+                <ArrowRight size={24} className="text-white -rotate-45" />
+              </div>
+              <h3 className="font-display text-2xl font-light text-gala-charcoal">¡Consulta enviada!</h3>
+              <p className="text-[0.95rem] text-gala-charcoal/60 max-w-xs">
+                Te responderemos en menos de 24 horas hábiles con una propuesta a medida.
+              </p>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
-              <FormField label="Email corporativo" placeholder="mail@empresa.com" type="email" />
-              <FormField label="Teléfono" placeholder="+54 11..." type="tel" />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
-              <FormSelect label="Ocasión" options={contactOccasions} />
-              <FormSelect label="Cantidad estimada" options={contactQuantities} />
-            </div>
-            <div className="mb-5">
-              <label className="block text-[0.7rem] font-semibold tracking-[0.1em] uppercase text-gala-charcoal/50 mb-2">
-                Contanos sobre tu proyecto
-              </label>
-              <textarea
-                className="w-full px-4 py-3 border border-gala-stone bg-gala-cream font-body text-[0.9rem] text-gala-charcoal outline-none transition-all focus:border-gala-red focus:ring-[3px] focus:ring-gala-red/[0.08] resize-y min-h-[120px]"
-                placeholder="¿Qué tenés en mente? Presupuesto orientativo, fecha de entrega, detalles de personalización..."
-              />
-            </div>
-            <button
-              type="submit"
-              className="w-full inline-flex items-center justify-center gap-2.5 px-8 py-4 bg-gala-red text-white text-[0.8rem] font-semibold tracking-[0.12em] uppercase transition-all hover:bg-gala-red-deep hover:-translate-y-0.5 hover:shadow-lg hover:shadow-gala-red/25 group"
-            >
-              Enviar consulta
-              <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
-            </button>
-          </form>
+          ) : (
+            <form className="bg-white p-10 border border-gala-stone" onSubmit={handleSubmit}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
+                <FormField label="Nombre" placeholder="Tu nombre" value={fields.nombre} onChange={set("nombre")} required />
+                <FormField label="Empresa" placeholder="Nombre de la empresa" value={fields.empresa} onChange={set("empresa")} />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
+                <FormField label="Email corporativo" placeholder="mail@empresa.com" type="email" value={fields.email} onChange={set("email")} required />
+                <FormField label="Teléfono" placeholder="+54 11..." type="tel" value={fields.telefono} onChange={set("telefono")} />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
+                <FormSelect label="Ocasión" options={contactOccasions} value={fields.ocasion} onChange={set("ocasion")} />
+                <FormSelect label="Cantidad estimada" options={contactQuantities} value={fields.cantidad} onChange={set("cantidad")} />
+              </div>
+              <div className="mb-5">
+                <label className="block text-[0.7rem] font-semibold tracking-[0.1em] uppercase text-gala-charcoal/50 mb-2">
+                  Contanos sobre tu proyecto
+                </label>
+                <textarea
+                  className="w-full px-4 py-3 border border-gala-stone bg-gala-cream font-body text-[0.9rem] text-gala-charcoal outline-none transition-all focus:border-gala-red focus:ring-[3px] focus:ring-gala-red/[0.08] resize-y min-h-[120px]"
+                  placeholder="¿Qué tenés en mente? Presupuesto orientativo, fecha de entrega, detalles de personalización..."
+                  value={fields.mensaje}
+                  onChange={set("mensaje")}
+                  required
+                />
+              </div>
+              {status === "error" && (
+                <p className="text-[0.85rem] text-gala-red mb-4">
+                  Hubo un error al enviar. Por favor intentá de nuevo o escribinos directamente.
+                </p>
+              )}
+              <button
+                type="submit"
+                disabled={status === "loading"}
+                className="w-full inline-flex items-center justify-center gap-2.5 px-8 py-4 bg-gala-red text-white text-[0.8rem] font-semibold tracking-[0.12em] uppercase transition-all hover:bg-gala-red-deep hover:-translate-y-0.5 hover:shadow-lg hover:shadow-gala-red/25 group disabled:opacity-60 disabled:pointer-events-none"
+              >
+                {status === "loading" ? "Enviando..." : "Enviar consulta"}
+                <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
+              </button>
+            </form>
+          )}
         </Reveal>
       </div>
     </section>
@@ -530,13 +576,11 @@ function SectionLabel({
 }
 
 function FormField({
-  label,
-  placeholder,
-  type = "text",
+  label, placeholder, type = "text", value, onChange, required,
 }: {
-  label: string;
-  placeholder: string;
-  type?: string;
+  label: string; placeholder: string; type?: string;
+  value: string; onChange: React.ChangeEventHandler<HTMLInputElement>;
+  required?: boolean;
 }) {
   return (
     <div>
@@ -546,6 +590,9 @@ function FormField({
       <input
         type={type}
         placeholder={placeholder}
+        value={value}
+        onChange={onChange}
+        required={required}
         className="w-full px-4 py-3 border border-gala-stone bg-gala-cream font-body text-[0.9rem] text-gala-charcoal outline-none transition-all focus:border-gala-red focus:ring-[3px] focus:ring-gala-red/[0.08]"
       />
     </div>
@@ -553,23 +600,24 @@ function FormField({
 }
 
 function FormSelect({
-  label,
-  options,
+  label, options, value, onChange,
 }: {
-  label: string;
-  options: string[];
+  label: string; options: string[];
+  value: string; onChange: React.ChangeEventHandler<HTMLSelectElement>;
 }) {
   return (
     <div>
       <label className="block text-[0.7rem] font-semibold tracking-[0.1em] uppercase text-gala-charcoal/50 mb-2">
         {label}
       </label>
-      <select className="w-full px-4 py-3 border border-gala-stone bg-gala-cream font-body text-[0.9rem] text-gala-charcoal outline-none transition-all focus:border-gala-red focus:ring-[3px] focus:ring-gala-red/[0.08] appearance-none">
+      <select
+        className="w-full px-4 py-3 border border-gala-stone bg-gala-cream font-body text-[0.9rem] text-gala-charcoal outline-none transition-all focus:border-gala-red focus:ring-[3px] focus:ring-gala-red/[0.08] appearance-none"
+        value={value}
+        onChange={onChange}
+      >
         <option value="">Seleccionar...</option>
         {options.map((opt) => (
-          <option key={opt} value={opt}>
-            {opt}
-          </option>
+          <option key={opt} value={opt}>{opt}</option>
         ))}
       </select>
     </div>
